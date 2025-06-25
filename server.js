@@ -1,30 +1,63 @@
 const express = require("express");
-const path = require("path");
-const cookieParser = require("cookie-parser");
+const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 require("dotenv").config();
 
+const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
+const panelRoutes = require("./routes/panelRoutes");
+const measurementRoutes = require("./routes/measurementRoutes");
+const technicianRoutes = require("./routes/technicianRoutes");
+
+const errorHandler = require("./middleware/errorHandler");
+const { authenticateToken } = require("./middleware/auth");
+
 const app = express();
-const server = require("http").createServer(app);
-const port = process.env.PORT_API;
+const PORT = process.env.PORT || 3000;
 
+// Security middleware
+app.use(helmet());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "*",
+    credentials: true,
+  })
+);
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
+
+// Body parsing middleware
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-app.use(cookieParser());
 
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"); // Métodos permitidos
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization"); // Cabeçalhos permitidos
-  res.header("Access-Control-Allow-Credentials", "true");
-  next();
+// Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/users", authenticateToken, userRoutes);
+app.use("/api/panels", authenticateToken, panelRoutes);
+app.use("/api/measurements", authenticateToken, measurementRoutes);
+app.use("/api/technicians", authenticateToken, technicianRoutes);
+
+// Health check
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "OK", timestamp: new Date().toISOString() });
 });
 
-app.use(express.static(path.join(__dirname, "/public")));
-app.use("/images", express.static("data/images"));
+// Error handling middleware
+app.use(errorHandler);
 
-const routes = require("./routes/routes");
-app.use("/", routes);
-
-server.listen(port, function () {
-  console.log("Server listening on port " + port);
+// 404 handler
+app.use("*", (req, res) => {
+  res.status(404).json({ error: "Route not found" });
 });
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+module.exports = app;

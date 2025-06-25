@@ -1,165 +1,55 @@
-const ApplicationController = require("./applicationController");
-const User = require("../model/user");
+const User = require('../models/User');
 
-class UserController extends ApplicationController {
-  async usersJson(req, res) {
-    let type = req.body.params.type;
-    let users = [];
-
-    switch (type) {
-      case "nome":
-        users = User.where({ name: req.body.params.search, deleted: "false" });
-        break;
-      case "email":
-        users = User.where({ email: req.body.params.search, deleted: "false" });
-        break;
-      default:
-        users = User.where({ deleted: "false" });
-        break;
+const userController = {
+  async getAllUsers(req, res) {
+    try {
+      const users = await User.getAll();
+      res.json(users);
+    } catch (error) {
+      console.error('Get users error:', error);
+      res.status(500).json({ error: 'Failed to get users' });
     }
+  },
 
-    let users_jsons = users.map((user) => {
-      return user.json();
-    });
-
-    let data = {
-      users_jsons: users_jsons,
-    };
-
-    res.setHeader("Content-Type", "application/json");
-    res.status(200);
-    return res.send(JSON.stringify(data));
-  }
-
-  async index(req, res) {
-    const error = req.query.error;
-    const [current_user, policy] = super.define_user_and_policy(res);
-    let users = User.where({ deleted: "false" });
-
-    if (!policy.user().index()) {
-      res.status(401);
-      return res.end();
+  async getUserById(req, res) {
+    try {
+      const { id } = req.params;
+      const user = await User.findById(id);
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      console.error('Get user error:', error);
+      res.status(500).json({ error: 'Failed to get user' });
     }
+  },
 
-    const data = {
-      users: users,
-    };
-    res.status(200);
-    return res.send(JSON.stringify(data));
-  }
-
-  async show(req, res) {
-    const error = req.query.error;
-    const [current_user, policy] = super.define_user_and_policy(res);
-    let user = User.find(req.params.id);
-
-    if (!policy.user(user).show()) {
-      res.status(401);
-      return res.end();
+  async updateUser(req, res) {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      
+      const updatedUser = await User.update(id, updateData);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Update user error:', error);
+      res.status(500).json({ error: 'Failed to update user' });
     }
+  },
 
-    const data = {
-      user: user,
-    };
-    res.status(200);
-    return res.send(JSON.stringify(data));
-  }
-
-  async new(req, res) {
-    const error = req.query.error;
-    const [current_user, policy] = super.define_user_and_policy(res);
-
-    if (!policy.user().new()) {
-      res.status(401);
-      return res.end();
+  async deleteUser(req, res) {
+    try {
+      const { id } = req.params;
+      await User.delete(id);
+      res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+      console.error('Delete user error:', error);
+      res.status(500).json({ error: 'Failed to delete user' });
     }
-
-    res.status(200);
-    return res.end();
   }
+};
 
-  async create(req, res) {
-    const error = req.query.error;
-    const [current_user, policy] = super.define_user_and_policy(res);
-
-    if (!policy.user().create()) {
-      res.status(401);
-      return res.end();
-    }
-
-    let params = req.body;
-
-    let user = User.create({
-      name: params.name,
-      username: params.username,
-      cpf: params.cpf,
-      email: params.email,
-      password: params.password,
-      role: params.role,
-    });
-
-    const data = {
-      user: user,
-    };
-
-    res.status(201);
-    return res.send(JSON.stringify(data));
-  }
-
-  async edit(req, res) {
-    const error = req.query.error;
-    const [current_user, policy] = super.define_user_and_policy(res);
-
-    if (!policy.user().edit()) {
-      res.status(401);
-      return res.end();
-    }
-
-    let user = User.find(req.params.id);
-
-    const data = {
-      user: user,
-    };
-    res.status(200);
-    return res.send(JSON.stringify(data));
-  }
-
-  async update(req, res) {
-    const error = req.query.error;
-    const [current_user, policy] = super.define_user_and_policy(res);
-
-    if (!policy.user().update()) {
-      res.status(401);
-      return res.end();
-    }
-
-    let params = req.body;
-    let user = User.find(req.params.id);
-
-    user.update({
-      name: params.name,
-      cpf: params.cpf,
-      username: params.username,
-      email: params.email,
-      password: params.password,
-      role: params.role,
-    });
-
-    const data = {
-      user: user,
-    };
-
-    res.status(200);
-    return res.send(JSON.stringify(data));
-  }
-
-  async delete(req, res) {
-    const id = req.params.id;
-    User.delete(id);
-
-    res.status(204);
-    return res.end();
-  }
-}
-
-module.exports = new UserController();
+module.exports = userController;
