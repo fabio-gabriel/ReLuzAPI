@@ -4,7 +4,8 @@ const validatePanelData = (req, res, next) => {
   const schema = Joi.object({
     name: Joi.string().required().min(1).max(100),
     location: Joi.string().required().min(1).max(200),
-    installation_date: Joi.date().iso().required()
+    installation_date: Joi.date().iso().required(),
+    status: Joi.bool().required()
   });
 
   const { error } = schema.validate(req.body);
