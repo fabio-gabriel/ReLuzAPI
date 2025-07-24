@@ -38,6 +38,7 @@ const validateUserData = (req, res, next) => {
   const schema = Joi.object({
     name: Joi.string().required().min(1).max(100),
     email: Joi.string().email().required(),
+    password: Joi.string().min(4).max(128).required(), // ← Password added here
     role: Joi.string().valid('customer', 'technician', 'admin').required()
   });
 

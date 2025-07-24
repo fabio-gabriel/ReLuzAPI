@@ -1,4 +1,4 @@
-const { adminAuth } = require('../config/firebase');
+const { adminAuth, adminDB } = require('../config/firebase');
 const User = require('../models/User');
 
 const authController = {
@@ -6,27 +6,29 @@ const authController = {
     try {
       const { email, password, name, role = 'customer' } = req.body;
 
-      // Create user in Firebase Auth
       const userRecord = await adminAuth.createUser({
         email,
         password,
         displayName: name
       });
 
-      // Create user in database
-      const userData = {
+      const uid = userRecord.uid;
+
+      const userData = { name, email, role };
+      await User.create(userData);
+
+      await adminDB.ref(`users/${uid}`).set({
         name,
         email,
-        role
-      };
-
-      await User.create(userData);
+        role,
+        created_at: new Date().toISOString()
+      });
 
       res.status(201).json({
         message: 'User created successfully',
         user: {
-          uid: userRecord.uid,
-          email: userRecord.email,
+          uid,
+          email,
           name,
           role
         }
