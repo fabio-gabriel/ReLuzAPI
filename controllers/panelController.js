@@ -3,10 +3,10 @@ const Panel = require('../models/Panel');
 const panelController = {
   async createPanel(req, res) {
     try {
-      const { name, location, installation_date } = req.body;
+      const { name, location, installation_date, status } = req.body;
       const ownerId = req.user.uid;
       
-      const panelData = { name, location, installation_date };
+      const panelData = { name, location, installation_date, status };
       const newPanel = await Panel.create(panelData, ownerId);
       
       res.status(201).json(newPanel);

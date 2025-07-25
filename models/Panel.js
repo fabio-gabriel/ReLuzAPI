@@ -9,6 +9,7 @@ class Panel {
       owner_id: ownerId,
       location: panelData.location,
       installation_date: panelData.installation_date,
+      status: panelData.status,
       last_updated: new Date().toISOString(),
       created_at: new Date().toISOString(),
       measurements: {}
